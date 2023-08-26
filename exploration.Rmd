@@ -1,0 +1,39 @@
+---
+title: "exploration"
+output: html_document
+---
+
+```{r}
+library(sf)
+```
+
+```{r}
+msoa_uk <- st_read("MSOA_Dec_2011_PWC_in_England_and_Wales_2022_-4970423835205684272/MSOA_Dec_2011_PWC_in_England_and_Wales.shp")
+```
+```{r}
+head(msoa_uk)
+```
+```{r}
+# msoa London
+msoa_london <- st_read("ESRI/MSOA_2011_London_gen_MHW.shp")
+```
+```{r}
+head(msoa_london)
+```
+```{r}
+plot(msoa_london)
+```
+```{r}
+# filter london only
+london_centroid <- msoa_uk[msoa_uk$msoa11cd %in% msoa_london$MSOA11CD, ]
+```
+
+```{r}
+# save as gpkg
+st_write(london_centroid, 'london_centroid.gpkg')
+```
+
+```{r}
+
+```
+

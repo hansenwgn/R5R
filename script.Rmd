@@ -1,0 +1,79 @@
+---
+title: "script"
+output: html_document
+---
+
+```{r}
+library(r5r)
+library(sf)
+library(data.table)
+library(ggplot2)
+library(readr)
+library(dplyr)
+```
+```{r}
+# MSOA centroid
+centroid <- st_read('london_centroid.gpkg')
+centroid <- st_transform(centroid, 4326)
+centroid <- rename(centroid, id = msoa11cd)
+```
+```{r}
+# read music and theatre venues (cultural amenities)
+destination <- read_csv('Music_venues_all.csv')
+names(destination)[names(destination) == "name"] <- "id"
+destination <- st_as_sf(destination, coords = c("longitude", "latitude"), crs = 4326)
+```
+```{r}
+options(java.parameters = "-Xmx5G")
+library(r5r)
+```
+
+```{r}
+r5r_core <- setup_r5(data_path = 'r5r')
+# data from: https://liveuclac-my.sharepoint.com/personal/ucfndas_ucl_ac_uk/_layouts/15/onedrive.aspx?id=%2Fpersonal%2Fucfndas%5Fucl%5Fac%5Fuk%2FDocuments%2FAccessibility%5FWorkshop&ga=1 
+```
+```{r}
+# route
+mode <- c("WALK", "TRANSIT")
+max_trip_duration <- 45L
+max_walk_time <- 30 # in minutes
+walk_speed <- 4.5
+#max_walk <- Inf
+#travel_time_cutoff <- 30 # in minutes
+departure_datetime <- as.POSIXct("12-04-2023 08:00:00", format = "%d-%m-%Y %H:%M:%S")
+time_window <- 3*20 # in minutes
+percentiles <- 50
+```
+
+```{r}
+gc()
+
+start_time <- Sys.time()
+
+ttm <- travel_time_matrix(r5r_core = r5r_core,
+                        origins = centroid,
+                        destinations = destination,
+                        mode = mode,
+                        departure_datetime = departure_datetime,
+                        #decay_function = "step",
+                        #cutoffs = travel_time_cutoff,
+                        max_trip_duration = max_trip_duration,
+                        max_walk_time = 30,
+                        max_rides = 3,
+                        walk_speed = walk_speed,
+                        time_window = time_window,
+                        percentiles = percentiles,
+                        progress = TRUE)
+
+end_time <- Sys.time()
+end_time <- start_time
+head(ttm)
+```
+```{r}
+# Save the data frame to a CSV file
+
+date_s <- format(departure_datetime, "%Y%m%d")
+
+write.csv(ttm, "ttm.csv", row.names = TRUE)
+```
+
